@@ -106,7 +106,7 @@ class ResizeTransform(Transform):
         # TODO decide on PIL vs opencv
         super().__init__()
         if interp is None:
-            interp = Image.BILINEAR
+            interp = Image.BILINEAR        # 双线性插值
         self._set_attributes(locals())
 
     def apply_image(self, img, interp=None):
@@ -114,15 +114,15 @@ class ResizeTransform(Transform):
         assert len(img.shape) <= 4
         interp_method = interp if interp is not None else self.interp
 
-        if img.dtype == np.uint8:
+        if img.dtype == np.uint8:          # 0到255的整数变量
             if len(img.shape) > 2 and img.shape[2] == 1:
-                pil_image = Image.fromarray(img[:, :, 0], mode="L")
+                pil_image = Image.fromarray(img[:, :, 0], mode="L")   # 灰度图像
             else:
                 pil_image = Image.fromarray(img)
-            pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)
-            ret = np.asarray(pil_image)
+            pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)   # 使用pillow进行resize
+            ret = np.asarray(pil_image)      # 再转化为ndarray格式
             if len(img.shape) > 2 and img.shape[2] == 1:
-                ret = np.expand_dims(ret, -1)
+                ret = np.expand_dims(ret, -1)       # 把最后一个维度加进来
         else:
             # PIL only supports uint8
             if any(x < 0 for x in img.strides):
@@ -147,12 +147,12 @@ class ResizeTransform(Transform):
         return ret
 
     def apply_coords(self, coords):
-        coords[:, 0] = coords[:, 0] * (self.new_w * 1.0 / self.w)
-        coords[:, 1] = coords[:, 1] * (self.new_h * 1.0 / self.h)
+        coords[:, 0] = coords[:, 0] * (self.new_w * 1.0 / self.w)        #  x坐标
+        coords[:, 1] = coords[:, 1] * (self.new_h * 1.0 / self.h)        #  y坐标
         return coords
 
     def apply_segmentation(self, segmentation):
-        segmentation = self.apply_image(segmentation, interp=Image.NEAREST)
+        segmentation = self.apply_image(segmentation, interp=Image.NEAREST)   # 最近邻采样
         return segmentation
 
     def inverse(self):

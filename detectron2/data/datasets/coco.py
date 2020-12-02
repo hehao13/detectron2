@@ -64,11 +64,11 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
     id_map = None
     if dataset_name is not None:
         meta = MetadataCatalog.get(dataset_name)
-        cat_ids = sorted(coco_api.getCatIds())
-        cats = coco_api.loadCats(cat_ids)
+        cat_ids = sorted(coco_api.getCatIds())       # list
+        cats = coco_api.loadCats(cat_ids)           # list of dict
         # The categories in a custom json file may not be sorted.
         thing_classes = [c["name"] for c in sorted(cats, key=lambda x: x["id"])]
-        meta.thing_classes = thing_classes
+        meta.thing_classes = thing_classes          # list of dict
 
         # In COCO, certain category ids are artificially removed,
         # and by convention they are always ignored.
@@ -86,7 +86,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 """
                 )
         id_map = {v: i for i, v in enumerate(cat_ids)}
-        meta.thing_dataset_id_to_contiguous_id = id_map
+        meta.thing_dataset_id_to_contiguous_id = id_map     # 把CATEGory id转化为连续的
 
     # sort indices for reproducible results
     img_ids = sorted(coco_api.imgs.keys())
@@ -98,7 +98,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
     #  'width': 640,
     #  'date_captured': '2013-11-17 05:57:24',
     #  'id': 1268}
-    imgs = coco_api.loadImgs(img_ids)
+    imgs = coco_api.loadImgs(img_ids)     # list of dicts
     # anns is a list[list[dict]], where each dict is an annotation
     # record for an object. The inner list enumerates the objects in an image
     # and the outer list enumerates over images. Example of anns[0]:
@@ -114,9 +114,9 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
     #   'category_id': 16,
     #   'id': 42986},
     #  ...]
-    anns = [coco_api.imgToAnns[img_id] for img_id in img_ids]
-    total_num_valid_anns = sum([len(x) for x in anns])
-    total_num_anns = len(coco_api.anns)
+    anns = [coco_api.imgToAnns[img_id] for img_id in img_ids]   # list of list of dicts
+    total_num_valid_anns = sum([len(x) for x in anns])    # 有效的anno的个数
+    total_num_anns = len(coco_api.anns)       # anno的个数
     if total_num_valid_anns < total_num_anns:
         logger.warning(
             f"{json_file} contains {total_num_anns} annotations, but only "
@@ -149,7 +149,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         image_id = record["image_id"] = img_dict["id"]
 
         objs = []
-        for anno in anno_dict_list:
+        for anno in anno_dict_list:     # anno_dict_list list of dicts
             # Check that the image_id in this annotation is the same as
             # the image_id we're looking at.
             # This fails only when the data parsing logic or the annotation file is buggy.
@@ -190,10 +190,10 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
             obj["bbox_mode"] = BoxMode.XYWH_ABS
             if id_map:
-                obj["category_id"] = id_map[obj["category_id"]]
+                obj["category_id"] = id_map[obj["category_id"]]   # 对应回真实的id
             objs.append(obj)
         record["annotations"] = objs
-        dataset_dicts.append(record)
+        dataset_dicts.append(record)    # list of dicts 每一张图片都是一个dict
 
     if num_instances_without_valid_segmentation > 0:
         logger.warning(
@@ -447,7 +447,7 @@ def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
 
 
 def register_coco_instances(name, metadata, json_file, image_root):
-    """
+    """    name: coco_2014_train等，
     Register a dataset in COCO's json annotation format for
     instance detection, instance segmentation and keypoint detection.
     (i.e., Type 1 and 2 in http://cocodataset.org/#format-data.
@@ -470,7 +470,7 @@ def register_coco_instances(name, metadata, json_file, image_root):
     DatasetCatalog.register(name, lambda: load_coco_json(json_file, image_root, name))
 
     # 2. Optionally, add metadata about this dataset,
-    # since they might be useful in evaluation, visualization or logging
+    # since they might be useful iload_coco_jsonn evaluation, visualization or logging
     MetadataCatalog.get(name).set(
         json_file=json_file, image_root=image_root, evaluator_type="coco", **metadata
     )

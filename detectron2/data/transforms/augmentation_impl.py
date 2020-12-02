@@ -141,8 +141,8 @@ class ResizeShortestEdge(Augmentation):
 
         self.is_range = sample_style == "range"
         if isinstance(short_edge_length, int):
-            short_edge_length = (short_edge_length, short_edge_length)
-        if self.is_range:
+            short_edge_length = (short_edge_length, short_edge_length)     # 短边的长度范围
+        if self.is_range:                    # 从一个范围中选择短边的长度
             assert len(short_edge_length) == 2, (
                 "short_edge_length must be two values using 'range' sample style."
                 f" Got {short_edge_length}!"
@@ -152,24 +152,24 @@ class ResizeShortestEdge(Augmentation):
     def get_transform(self, image):
         h, w = image.shape[:2]
         if self.is_range:
-            size = np.random.randint(self.short_edge_length[0], self.short_edge_length[1] + 1)
+            size = np.random.randint(self.short_edge_length[0], self.short_edge_length[1] + 1)   # 选择一个短边
         else:
-            size = np.random.choice(self.short_edge_length)
+            size = np.random.choice(self.short_edge_length)      # 选择一个短边的长度
         if size == 0:
             return NoOpTransform()
 
-        scale = size * 1.0 / min(h, w)
+        scale = size * 1.0 / min(h, w)              # 缩放的尺度
         if h < w:
             newh, neww = size, scale * w
         else:
             newh, neww = scale * h, size
-        if max(newh, neww) > self.max_size:
-            scale = self.max_size * 1.0 / max(newh, neww)
-            newh = newh * scale
+        if max(newh, neww) > self.max_size:      # 如果长边大于了规定的长度
+            scale = self.max_size * 1.0 / max(newh, neww)     # 重新计算scale
+            newh = newh * scale                   # 重新计算高度与宽度
             neww = neww * scale
         neww = int(neww + 0.5)
         newh = int(newh + 0.5)
-        return ResizeTransform(h, w, newh, neww, self.interp)
+        return ResizeTransform(h, w, newh, neww, self.interp)          # resize
 
 
 class RandomRotation(Augmentation):
@@ -245,11 +245,11 @@ class RandomCrop(Augmentation):
 
     def get_transform(self, image):
         h, w = image.shape[:2]
-        croph, cropw = self.get_crop_size((h, w))
+        croph, cropw = self.get_crop_size((h, w))       # crop之后的高度与宽度
         assert h >= croph and w >= cropw, "Shape computation in {} has bugs.".format(self)
         h0 = np.random.randint(h - croph + 1)
         w0 = np.random.randint(w - cropw + 1)
-        return CropTransform(w0, h0, cropw, croph)
+        return CropTransform(w0, h0, cropw, croph)        # 左上角的坐标以及宽度和高度
 
     def get_crop_size(self, image_size):
         """

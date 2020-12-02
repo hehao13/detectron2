@@ -158,8 +158,8 @@ class Boxes:
         Args:
             tensor (Tensor[float]): a Nx4 matrix.  Each row is (x1, y1, x2, y2).
         """
-        device = tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")
-        tensor = torch.as_tensor(tensor, dtype=torch.float32, device=device)
+        device = tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")   # ndarray
+        tensor = torch.as_tensor(tensor, dtype=torch.float32, device=device)     # 转化为tensor
         if tensor.numel() == 0:
             # Use reshape, so we don't end up creating a new tensor that does not depend on
             # the inputs (and consequently confuses jit)
@@ -175,7 +175,7 @@ class Boxes:
         Returns:
             Boxes
         """
-        return Boxes(self.tensor.clone())
+        return Boxes(self.tensor.clone())     # 克隆
 
     @_maybe_jit_unused
     def to(self, device: torch.device = None):  # noqa

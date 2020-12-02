@@ -67,7 +67,7 @@ class DatasetFromList(data.Dataset):
     def __init__(self, lst: list, copy: bool = True, serialize: bool = True):
         """
         Args:
-            lst (list): a list which contains elements to produce.
+            lst (list): a list which contains elements to produce.   # list of dict
             copy (bool): whether to deepcopy the element when producing it,
                 so that the result can be modified in place without affecting the
                 source in the list.

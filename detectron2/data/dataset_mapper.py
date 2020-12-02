@@ -18,6 +18,7 @@ __all__ = ["DatasetMapper"]
 
 
 class DatasetMapper:
+    # DatasetMapper 在 data - dataset_mapper 中定义，用于读取数据、数据增强，等操作
     """
     A callable which takes a dataset dict in Detectron2 Dataset format,
     and map it into a format used by the model.
@@ -68,8 +69,8 @@ class DatasetMapper:
         if recompute_boxes:
             assert use_instance_mask, "recompute_boxes requires instance masks"
         # fmt: off
-        self.is_train               = is_train
-        self.augmentations          = T.AugmentationList(augmentations)
+        self.is_train               = is_train     # 是否在训练模式
+        self.augmentations          = T.AugmentationList(augmentations)      # augmentation的列表
         self.image_format           = image_format
         self.use_instance_mask      = use_instance_mask
         self.instance_mask_format   = instance_mask_format
@@ -84,9 +85,9 @@ class DatasetMapper:
 
     @classmethod
     def from_config(cls, cfg, is_train: bool = True):
-        augs = utils.build_augmentation(cfg, is_train)
-        if cfg.INPUT.CROP.ENABLED and is_train:
-            augs.insert(0, T.RandomCrop(cfg.INPUT.CROP.TYPE, cfg.INPUT.CROP.SIZE))
+        augs = utils.build_augmentation(cfg, is_train)        # resize以及随机翻转这种最常见的数据增强方式
+        if cfg.INPUT.CROP.ENABLED and is_train:              # 如果需要随机裁剪并且是处于训练阶段
+            augs.insert(0, T.RandomCrop(cfg.INPUT.CROP.TYPE, cfg.INPUT.CROP.SIZE))         # 加入crop的augmentation
             recompute_boxes = cfg.MODEL.MASK_ON
         else:
             recompute_boxes = False
@@ -102,7 +103,7 @@ class DatasetMapper:
         }
 
         if cfg.MODEL.KEYPOINT_ON:
-            ret["keypoint_hflip_indices"] = utils.create_keypoint_hflip_indices(cfg.DATASETS.TRAIN)
+            ret["keypoint_hflip_indices"] = utils.create_keypoint_hflip_indices(cfg.DATASETS.TRAIN)   # 使用keypoint
 
         if cfg.MODEL.LOAD_PROPOSALS:
             ret["precomputed_proposal_topk"] = (
@@ -122,26 +123,26 @@ class DatasetMapper:
         """
         dataset_dict = copy.deepcopy(dataset_dict)  # it will be modified by code below
         # USER: Write your own image loading if it's not from a file
-        image = utils.read_image(dataset_dict["file_name"], format=self.image_format)
+        image = utils.read_image(dataset_dict["file_name"], format=self.image_format)          # 读取图片
         utils.check_image_size(dataset_dict, image)
 
         # USER: Remove if you don't do semantic/panoptic segmentation.
         if "sem_seg_file_name" in dataset_dict:
-            sem_seg_gt = utils.read_image(dataset_dict.pop("sem_seg_file_name"), "L").squeeze(2)
+            sem_seg_gt = utils.read_image(dataset_dict.pop("sem_seg_file_name"), "L").squeeze(2)    # 读取语义的mask
         else:
             sem_seg_gt = None
 
-        aug_input = T.AugInput(image, sem_seg=sem_seg_gt)
-        transforms = self.augmentations(aug_input)
-        image, sem_seg_gt = aug_input.image, aug_input.sem_seg
+        aug_input = T.AugInput(image, sem_seg=sem_seg_gt)      #
+        transforms = self.augmentations(aug_input)             # 对输入进行数据增强，并且返回transform
+        image, sem_seg_gt = aug_input.image, aug_input.sem_seg   # 数据增强之后的图片以及语义mask
 
         image_shape = image.shape[:2]  # h, w
         # Pytorch's dataloader is efficient on torch.Tensor due to shared-memory,
         # but not efficient on large generic data structures due to the use of pickle & mp.Queue.
         # Therefore it's important to use torch.Tensor.
-        dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))
+        dataset_dict["image"] = torch.as_tensor(np.ascontiguousarray(image.transpose(2, 0, 1)))     # 转化为CHW的格式并且转化为tensor
         if sem_seg_gt is not None:
-            dataset_dict["sem_seg"] = torch.as_tensor(sem_seg_gt.astype("long"))
+            dataset_dict["sem_seg"] = torch.as_tensor(sem_seg_gt.astype("long"))                # 转化为tensor
 
         # USER: Remove if you don't use pre-computed proposals.
         # Most users would not need this feature.
@@ -174,7 +175,10 @@ class DatasetMapper:
             ]
             instances = utils.annotations_to_instances(
                 annos, image_shape, mask_format=self.instance_mask_format
-            )
+            )#Instances:
+            # It will contain fields "gt_boxes", "gt_classes",
+            # "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
+            # This is the format that builtin models expect.
 
             # After transforms such as cropping are applied, the bounding box may no longer
             # tightly bound the object. As an example, imagine a triangle object
@@ -182,6 +186,6 @@ class DatasetMapper:
             # bounding box of the cropped triangle should be [(1,0),(2,1)], which is not equal to
             # the intersection of original bounding box and the cropping box.
             if self.recompute_boxes:
-                instances.gt_boxes = instances.gt_masks.get_bounding_boxes()
+                instances.gt_boxes = instances.gt_masks.get_bounding_boxes()     # 得到最小的检测框
             dataset_dict["instances"] = utils.filter_empty_instances(instances)
         return dataset_dict

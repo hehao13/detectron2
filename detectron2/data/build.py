@@ -219,7 +219,7 @@ def get_detection_dataset_dicts(
     if isinstance(dataset_names, str):
         dataset_names = [dataset_names]
     assert len(dataset_names)
-    dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
+    dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]     # 从注册器中得到相应的注册函数
     for dataset_name, dicts in zip(dataset_names, dataset_dicts):
         assert len(dicts), "Dataset '{}' is empty!".format(dataset_name)
 
@@ -231,17 +231,17 @@ def get_detection_dataset_dicts(
             for dataset_i_dicts, proposal_file in zip(dataset_dicts, proposal_files)
         ]
 
-    dataset_dicts = list(itertools.chain.from_iterable(dataset_dicts))
+    dataset_dicts = list(itertools.chain.from_iterable(dataset_dicts))   # 转化为list(dict的格式)
 
-    has_instances = "annotations" in dataset_dicts[0]
+    has_instances = "annotations" in dataset_dicts[0]         # 是否有annotation
     if filter_empty and has_instances:
-        dataset_dicts = filter_images_with_only_crowd_annotations(dataset_dicts)
+        dataset_dicts = filter_images_with_only_crowd_annotations(dataset_dicts)   # 排除掉crowd的标注
     if min_keypoints > 0 and has_instances:
-        dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)
+        dataset_dicts = filter_images_with_few_keypoints(dataset_dicts, min_keypoints)  # 排除掉keyopint个数小于某个值的标注
 
     if has_instances:
         try:
-            class_names = MetadataCatalog.get(dataset_names[0]).thing_classes
+            class_names = MetadataCatalog.get(dataset_names[0]).thing_classes        # 得到类别的名字
             check_metadata_consistency("thing_classes", dataset_names)
             print_instances_class_histogram(dataset_dicts, class_names)
         except AttributeError:  # class names are not available for this dataset
@@ -295,7 +295,7 @@ def build_batch_data_loader(
             batch_sampler=batch_sampler,
             collate_fn=trivial_batch_collator,
             worker_init_fn=worker_init_reset_seed,
-        )
+        )         # 构建dataloader
 
 
 def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
@@ -307,10 +307,10 @@ def _train_loader_from_config(cfg, mapper=None, *, dataset=None, sampler=None):
             if cfg.MODEL.KEYPOINT_ON
             else 0,
             proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
-        )
+        )                   #  list of dict
 
     if mapper is None:
-        mapper = DatasetMapper(cfg, True)
+        mapper = DatasetMapper(cfg, True)  # datasetMapper 在 data - dataset_mapper 中定义，用于读取数据、数据增强，等操作
 
     if sampler is None:
         sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
@@ -368,9 +368,12 @@ def build_detection_train_loader(
             ``list[mapped_element]`` of length ``total_batch_size / num_workers``,
             where ``mapped_element`` is produced by the ``mapper``.
     """
-    if isinstance(dataset, list):
+    if isinstance(dataset, list):       # func:`get_detection_dataset_dicts得到
+        # 这里封装成DatasetFromList ， 和 他自身原本的list 形式没有太大区别
+        # 只是取元素的时候支持 deepcopy ，即对取出的元素的修改不会修改原值
         dataset = DatasetFromList(dataset, copy=False)
     if mapper is not None:
+        # DatasetMapper 在 data - dataset_mapper 中定义，用于读取数据、数据增强，等操作
         dataset = MapDataset(dataset, mapper)
     if sampler is None:
         sampler = TrainingSampler(len(dataset))

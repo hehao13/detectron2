@@ -374,26 +374,26 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
             "gt_masks", "gt_keypoints", if they can be obtained from `annos`.
             This is the format that builtin models expect.
     """
-    boxes = [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]
-    target = Instances(image_size)
-    target.gt_boxes = Boxes(boxes)
+    boxes = [BoxMode.convert(obj["bbox"], obj["bbox_mode"], BoxMode.XYXY_ABS) for obj in annos]    # 转化为左上角与右下角
+    target = Instances(image_size)             # 创建一个instance
+    target.gt_boxes = Boxes(boxes)            # 创建一个box，并且作为instance的属性
 
-    classes = [int(obj["category_id"]) for obj in annos]
+    classes = [int(obj["category_id"]) for obj in annos]         # 得到每一个框的类别信息
     classes = torch.tensor(classes, dtype=torch.int64)
-    target.gt_classes = classes
+    target.gt_classes = classes              # 给instance 加上一个类别的属性
 
-    if len(annos) and "segmentation" in annos[0]:
-        segms = [obj["segmentation"] for obj in annos]
-        if mask_format == "polygon":
+    if len(annos) and "segmentation" in annos[0]:              # 实例分割的mask
+        segms = [obj["segmentation"] for obj in annos]           # 所有框的mask的合集
+        if mask_format == "polygon":                           # 如果是polygen 形式的话
             # TODO check type and provide better error
-            masks = PolygonMasks(segms)
+            masks = PolygonMasks(segms)        # List[List[np.ndarray]]
         else:
             assert mask_format == "bitmask", mask_format
             masks = []
             for segm in segms:
-                if isinstance(segm, list):
+                if isinstance(segm, list):   # segm list[ndarray]
                     # polygon
-                    masks.append(polygons_to_bitmask(segm, *image_size))
+                    masks.append(polygons_to_bitmask(segm, *image_size))    # polygen转化为bitmask ndarray: a bool mask of shape (height, width)
                 elif isinstance(segm, dict):
                     # COCO RLE
                     masks.append(mask_util.decode(segm))
@@ -414,7 +414,7 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
             masks = BitMasks(
                 torch.stack([torch.from_numpy(np.ascontiguousarray(x)) for x in masks])
             )
-        target.gt_masks = masks
+        target.gt_masks = masks      # 给instance赋予一个实例分割mask的属性
 
     if len(annos) and "keypoints" in annos[0]:
         kpts = [obj.get("keypoints", []) for obj in annos]
@@ -572,21 +572,21 @@ def build_augmentation(cfg, is_train):
         list[Augmentation]
     """
     if is_train:
-        min_size = cfg.INPUT.MIN_SIZE_TRAIN
-        max_size = cfg.INPUT.MAX_SIZE_TRAIN
+        min_size = cfg.INPUT.MIN_SIZE_TRAIN            # 最小的输入大小
+        max_size = cfg.INPUT.MAX_SIZE_TRAIN            # 最大的输入大小
         sample_style = cfg.INPUT.MIN_SIZE_TRAIN_SAMPLING
     else:
         min_size = cfg.INPUT.MIN_SIZE_TEST
         max_size = cfg.INPUT.MAX_SIZE_TEST
         sample_style = "choice"
-    augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
+    augmentation = [T.ResizeShortestEdge(min_size, max_size, sample_style)]      # resize图片的augmentation
     if is_train and cfg.INPUT.RANDOM_FLIP != "none":
         augmentation.append(
             T.RandomFlip(
                 horizontal=cfg.INPUT.RANDOM_FLIP == "horizontal",
                 vertical=cfg.INPUT.RANDOM_FLIP == "vertical",
             )
-        )
+        )             # 随机翻转
     return augmentation
 
 

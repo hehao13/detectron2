@@ -256,12 +256,12 @@ class AugmentationList(Augmentation):
             augs (list[Augmentation or Transform]):
         """
         super().__init__()
-        self.augs = [_transform_to_aug(x) for x in augs]
+        self.augs = [_transform_to_aug(x) for x in augs]       # 如果是aug则不变化，如果是transform则转化为aug
 
     def __call__(self, aug_input) -> Transform:
         tfms = []
         for x in self.augs:
-            tfm = x(aug_input)
+            tfm = x(aug_input)             # 对input处理的同时，返回transform
             tfms.append(tfm)
         return TransformList(tfms)
 
